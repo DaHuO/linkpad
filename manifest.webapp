@@ -1,0 +1,49 @@
+{
+  "//": "KaiOS Hosted App manifest. Deploy the whole site on an HTTPS server that serves .webapp files with the application/x-web-app-manifest Content-Type, otherwise installation will be rejected",
+  "default_locale": "en-US",
+  "//name": "Top-level name/description are the fallback; localized text is read from the default_locale entry in locales first. LinkPad is the brand name - kept identical across locales (not translated)",
+  "name": "LinkPad",
+  "description": "Your phone's browser only lets you pin 6 sites to the home screen. LinkPad gives you room for all of them — save as many links as you want, search by name in seconds, and jump straight to your favorite sites.\n\n• Save any website with one key press\n• Search your saved sites by title or address\n• Sort by newest or most recently visited\n• Works in English, हिन्दी, Français, and Kiswahili",
+  "//type": "type:web means a Hosted App (content loaded from a remote server), no sensitive permissions requested; the permission list stays empty",
+  "type": "web",
+  "//launch_path": "Absolute path relative to the site root. Hosted Apps resolve it against the origin root",
+  "launch_path": "/index.html",
+  "//icons": "56 is the icon on mainstream KaiOS devices, 112 for higher-resolution screens; grayscale artwork, recognizable on monochrome screens too",
+  "icons": {
+    "56": "/icons/icon-56.png",
+    "112": "/icons/icon-112.png"
+  },
+  "developer": {
+    "name": "Bookmark Dev",
+    "url": "https://example.com/"
+  },
+  "//locales": "In-app UI supports en-US/hi-IN/fr-FR/sw-KE (see locales/*.properties); these locales carry the system-level name/subtitle/description translations and match the app translation files exactly",
+  "locales": {
+    "en-US": {
+      "name": "LinkPad",
+      "subtitle": "Save more than 6 sites. Find them fast.",
+      "description": "Your phone's browser only lets you pin 6 sites to the home screen. LinkPad gives you room for all of them — save as many links as you want, search by name in seconds, and jump straight to your favorite sites.\n\n• Save any website with one key press\n• Search your saved sites by title or address\n• Sort by newest or most recently visited\n• Works in English, हिन्दी, Français, and Kiswahili"
+    },
+    "hi-IN": {
+      "name": "LinkPad",
+      "subtitle": "6 से ज़्यादा साइटें सेव करें। तुरंत खोजें।",
+      "description": "आपके फ़ोन का ब्राउज़र होम स्क्रीन पर सिर्फ़ 6 साइटें पिन करने देता है। LinkPad में आप जितनी चाहें उतनी साइटें सेव कर सकते हैं — नाम से तुरंत खोजें और अपनी पसंदीदा साइट पर सीधे पहुँचें।\n\nएक बार दबाकर कोई भी वेबसाइट सेव करें\nनाम या पते से अपनी सेव की गई साइटें खोजें\nनई या हाल ही में देखी गई साइटों के हिसाब से क्रम लगाएं\nअंग्रेज़ी, हिन्दी, फ़्रेंच और स्वाहिली में उपलब्ध"
+    },
+    "fr-FR": {
+      "name": "LinkPad",
+      "subtitle": "Enregistrez plus de 6 sites. Retrouvez-les en un instant.",
+      "description": "Le navigateur de votre téléphone ne permet d'épingler que 6 sites sur l'écran d'accueil. LinkPad vous permet d'en enregistrer autant que vous voulez — recherchez-les par nom en quelques secondes et accédez directement à vos sites préférés.\n\nEnregistrez n'importe quel site d'une simple pression de touche\nRecherchez vos sites par titre ou adresse\nTriez par date d'ajout ou de dernière visite\nDisponible en anglais, hindi, français et swahili"
+    },
+    "sw-KE": {
+      "name": "LinkPad",
+      "subtitle": "Hifadhi tovuti zaidi ya 6. Zitafute haraka.",
+      "description": "Kivinjari cha simu yako kinaruhusu tu kubandika tovuti 6 kwenye skrini ya nyumbani. LinkPad inakupa nafasi ya kuhifadhi viungo vingi upendavyo — tafuta kwa jina kwa sekunde chache na ufikie tovuti unazozipenda moja kwa moja.\n\nHifadhi tovuti yoyote kwa mbofyo mmoja\nTafuta tovuti zako kwa jina au anwani\nPanga kwa mpya au kwa zilizotembelewa hivi karibuni\nInapatikana kwa Kiingereza, Kihindi, Kifaransa, na Kiswahili"
+    }
+  },
+  "//permissions": "No special permissions needed: opening URLs goes through a Web Activity (view) handled by the system browser; this app touches no network or device APIs",
+  "permissions": {},
+  "//dependencies": "KaiAds SDK dependency declaration required by the KaiStore. The version is an empty placeholder - TODO: fill it in after confirming the latest SDK version (e.g. '4.x') and cross-check the remote script version in index.html",
+  "dependencies": {
+    "ads-sdk": ""
+  }
+}

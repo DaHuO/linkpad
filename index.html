@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <!-- No zoom: feature phones have no touchscreen; fixed 1:1 viewport,
+       designed for 240x320 portrait -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>LinkPad</title>
+  <!-- Official KaiOS webL10n approach.
+       Note: the library looks for link[type="application/l10n"] (not rel);
+       locales.ini then @imports the per-language .properties files by
+       [lang] section. The lib auto-loads navigator.language on
+       DOMContentLoaded and translates data-l10n-id elements; language
+       selection/fallback logic lives in js/app.js. -->
+  <link type="application/l10n" href="locales/locales.ini">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- Top bar: app name + bookmark count / storage status.
+         LinkPad is the brand name - identical in every language, so it
+         deliberately carries no data-l10n-id -->
+    <header id="app-header">
+      <h1 id="header-title">LinkPad</h1>
+      <span id="header-meta"></span>
+    </header>
+
+    <!-- View 1: bookmark list (main view).
+         All interaction goes through the keydown state machine in
+         js/app.js (ArrowUp/ArrowDown/Enter/Backspace); there are no
+         click/touch handlers anywhere. The four command rows at the top
+         are static DOM (the search input lives inside one of them, so
+         re-renders never interrupt typing); #bm-list is rebuilt by JS.
+         Elements whose text switches between multiple keys in JS
+         (sort/search/lang labels, form title) deliberately have NO
+         data-l10n-id - they always go through navigator.webL10n.get()
+         so a language switch can't overwrite them with the wrong key. -->
+    <main id="view-list" class="view">
+      <div id="list-scroll" class="scroll">
+        <ul id="cmd-list" class="rows">
+          <li class="row cmd focusable" id="cmd-add" data-action="add">
+            <span class="row-title" data-l10n-id="add-bookmark">+ Add bookmark</span>
+          </li>
+          <li class="row cmd focusable" id="cmd-search" data-action="search">
+            <span class="row-title" id="search-label">Search…</span>
+            <!-- Search input: hidden by default, expands in place on
+                 Enter. It MUST carry the focusable class: it is part of
+                 the focus chain, and without it focus cannot enter the
+                 input after expanding (typing would be impossible).
+                 Placeholder goes through l10n: data-l10n-id points to
+                 search-input, and the properties provide the value via
+                 the search-input.placeholder dot syntax (official
+                 webL10n mechanism). type=text instead of type=url:
+                 input panels for url type are inconsistent on old
+                 engines - use text and validate in JS. -->
+            <input id="search-input" class="hidden focusable" type="text" maxlength="60"
+                   data-l10n-id="search-input" placeholder="Type keywords">
+          </li>
+          <li class="row cmd focusable" id="cmd-sort" data-action="sort">
+            <span class="row-title" id="sort-label">Sort: date added</span>
+          </li>
+          <li class="row cmd focusable" id="cmd-lang" data-action="lang">
+            <span class="row-title" id="lang-label">Language</span>
+          </li>
+        </ul>
+
+        <ul id="bm-list" class="rows"></ul>
+
+        <!-- Empty-list state: three small ribbons in the domain palette
+             (pure CSS bars) + a two-line message, echoing the
+             "bookmark = a ribbon on a page" signature -->
+        <div id="empty-tip" class="hidden">
+          <span class="ribbon-mark" aria-hidden="true"><i class="rm rm-0"></i><i class="rm rm-1"></i><i class="rm rm-2"></i></span>
+          <p class="empty-title" data-l10n-id="empty-title">Nothing saved yet</p>
+          <p class="empty-sub" data-l10n-id="empty-sub">Press Enter to hang your first ribbon</p>
+        </div>
+        <p id="no-match-tip" class="hidden" data-l10n-id="no-match">No matching bookmarks</p>
+      </div>
+
+      <!-- KaiAds banner slot: lives only inside the list view (above the
+           soft key bar, below the scrolling area), so it hides together
+           with the view on form/menu/etc. - no ads during operations.
+           The container starts hidden and is shown only when an ad is
+           filled; on failure it stays hidden (silent degradation,
+           see js/ads.js) -->
+      <div id="ad-banner" class="hidden"></div>
+    </main>
+
+    <!-- View 2: add / edit form.
+         Inputs are part of the focus chain (focusable class): focusing
+         one brings up the system keyboard for immediate typing, while
+         the arrow keys move between fields. -->
+    <section id="view-form" class="view hidden">
+      <h2 id="form-title">Add bookmark</h2>
+      <label class="field-label" for="f-title" data-l10n-id="label-title">Title (required)</label>
+      <input id="f-title" class="focusable" type="text" maxlength="80">
+      <label class="field-label" for="f-url" data-l10n-id="label-url">URL (required)</label>
+      <input id="f-url" class="focusable" type="text" maxlength="300"
+             data-l10n-id="f-url" placeholder="example.com">
+      <ul class="rows">
+        <li class="row btn focusable" id="f-save" data-l10n-id="save">Save</li>
+        <li class="row btn focusable" id="f-cancel" data-l10n-id="cancel">Cancel</li>
+      </ul>
+    </section>
+
+    <!-- View 3: bookmark action menu (invoked with Backspace while a
+         bookmark row has focus) -->
+    <section id="view-menu" class="view hidden">
+      <h2 data-l10n-id="menu-title">Actions</h2>
+      <p id="menu-target" class="target-line"></p>
+      <ul class="rows">
+        <li class="row btn focusable" data-menu="open" data-l10n-id="menu-open">Open</li>
+        <li class="row btn focusable" data-menu="edit" data-l10n-id="menu-edit">Edit</li>
+        <li class="row btn focusable" data-menu="delete" data-l10n-id="delete">Delete</li>
+        <li class="row btn focusable" data-menu="cancel" data-l10n-id="cancel">Cancel</li>
+      </ul>
+    </section>
+
+    <!-- View 4: delete confirmation (guards against accidental deletes
+         from pure key navigation) -->
+    <section id="view-confirm" class="view hidden">
+      <h2 data-l10n-id="confirm-title">Delete bookmark</h2>
+      <p id="confirm-text" class="target-line"></p>
+      <ul class="rows">
+        <li class="row btn focusable" id="confirm-yes" data-l10n-id="delete">Delete</li>
+        <li class="row btn focusable" id="confirm-no" data-l10n-id="cancel">Cancel</li>
+      </ul>
+    </section>
+
+    <!-- View 5: language selection (entered from the "Language" command
+         row; Enter applies, Backspace goes back).
+         Language names are always shown in their own language by
+         convention (not translated); the active option is marked by JS
+         with the .current class (CSS shows an asterisk).
+         An empty data-lang-value = follow the system language (clears
+         the manual override). -->
+    <section id="view-lang" class="view hidden">
+      <h2 data-l10n-id="lang-title">Select language</h2>
+      <ul class="rows">
+        <li class="row btn focusable" data-lang-value="" data-l10n-id="lang-system">Follow system language</li>
+        <li class="row btn focusable" data-lang-value="en-US">English</li>
+        <li class="row btn focusable" data-lang-value="hi-IN">हिन्दी</li>
+        <li class="row btn focusable" data-lang-value="fr-FR">Français</li>
+        <li class="row btn focusable" data-lang-value="sw-KE">Kiswahili</li>
+      </ul>
+    </section>
+
+    <!-- Soft key bar, three segments mapped to physical keys -
+         left = ▲▼ navigation; middle = Enter action (changes with focus,
+         amber); right = Backspace action (menu on a bookmark, back in
+         subviews). Doubles as the transient message (toast) area. -->
+    <footer id="statusbar">
+      <span id="sk-left"></span>
+      <span id="sk-mid"></span>
+      <span id="sk-right"></span>
+    </footer>
+
+  </div>
+  <!-- l10n.js must load before app.js: at startup app.js installs the
+       navigator alias and waits for webL10n before the first render;
+       ads.js defines window.BmAds for app.js to call once the home
+       screen is ready -->
+  <script src="js/lib/l10n.js"></script>
+  <script src="js/ads.js"></script>
+  <script src="js/app.js"></script>
+  <!-- KaiAds SDK (required by the KaiStore). Remote copy for easier dev;
+       defer + placed last => never blocks app startup: on a slow network
+       the app runs first and the SDK joins later (js/ads.js polls for
+       it and gives up silently after 8s).
+       TODO: switch to a locally bundled copy before store submission -->
+  <script src="https://static.kaiads.com/ads-sdk/ads-sdk.v4.min.js" defer></script>
+</body>
+</html>

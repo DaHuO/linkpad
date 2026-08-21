@@ -1,0 +1,298 @@
+/*
+ * KaiOS Bookmark Manager styles - "Ink & Amber" design language
+ *
+ * Design principles (built for 240x320 portrait, D-pad navigation, and
+ * partially monochrome / low-color screens):
+ *  1) Exactly 6 named colors for the whole app (see comments below);
+ *     hierarchy comes from lightness steps, never from thin dividers;
+ *  2) Focus is functional feedback: an amber background + ink text is a
+ *     double inversion (hue + lightness), reinforced by the left amber
+ *     bar and the "»" prefix - three redundancies, so on a monochrome
+ *     screen (amber ~ light gray) it is still the most striking block;
+ *  3) One signature detail only: the 4px "domain ribbon" on the left of
+ *     each bookmark row (color chosen by domain hash, see ribbonIndex in
+ *     js/app.js + .rb-0..rb-4 below);
+ *  4) No external fonts or images, no complex animations (just a 0.1s
+ *     background transition), compatible with old Gecko engines.
+ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  /* Ink #0F141B: a blue-leaning black, slightly warmer than pure black,
+     comfortable for long looks */
+  background: #0F141B;
+  color: #F0F3F7;                       /* primary text: near-white, ~15:1 */
+  font-family: "KaiOS Sans", "Nokia Pure Text", "Droid Sans", sans-serif;
+  font-size: 16px;
+  line-height: 1.3;
+  overflow: hidden;                     /* scrolling happens only in .scroll */
+}
+
+/* The app is a single 240px-wide column; centered with side borders on
+   desktop to simulate the phone screen */
+#app {
+  max-width: 240px;
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: #0F141B;
+  /* The soft key bar is fixed to the bottom (see #statusbar); reserve
+     its space so the last list row is never covered. The 34px must stay
+     in sync with #statusbar's calc value - change both together */
+  padding-bottom: 34px;
+}
+@media (min-width: 320px) {
+  #app { border-left: 1px solid #2A3542; border-right: 1px solid #2A3542; }
+}
+
+/* ---------- Top bar: amber app mark + title + count ---------- */
+
+#app-header {
+  flex: none;
+  padding: 9px 10px 8px;
+  background: #1A222E;                  /* panel: one lightness step up */
+  border-bottom: 2px solid #2A3542;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+/* The anchor of the design system: a small amber square before the
+   title, sitting where a carrier mark would be on a feature phone */
+#header-title { font-size: 18px; font-weight: bold; line-height: 1.2; }
+#header-title::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 13px;
+  margin-right: 6px;
+  background: #FFC24B;                  /* amber: same source as focus -
+                                           "this is pressable" */
+}
+#header-meta { font-size: 12px; color: #93A0B0; }
+
+/* ---------- View skeleton ---------- */
+
+.view {
+  flex: 1 1 auto;
+  min-height: 0;               /* key: lets the flex child shrink so the
+                                  scroll area works */
+  display: flex;
+  flex-direction: column;
+}
+.hidden { display: none !important; }
+
+/* List scroll container: position:relative keeps a row's offsetTop
+   relative to it, which lets JS scroll the focused row into view
+   manually (scrollIntoView arguments are inconsistent on old Gecko) */
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* ---------- List rows ---------- */
+
+.rows { list-style: none; }
+
+.row {
+  padding: 7px 10px;
+  border-left: 4px solid transparent;   /* reserves the focus/ribbon slot
+                                           so the layout never jumps */
+  -webkit-transition: background-color 0.1s ease;  /* old engines ignore */
+  transition: background-color 0.1s ease;
+}
+
+/* Commands and bookmarks are grouped by rhythm: command rows are tight
+   (7px), bookmark rows are airy (10px), with an 8px gap between the two
+   groups (see #cmd-list margin-bottom) - no divider lines */
+#cmd-list { margin-bottom: 8px; }
+.row.bm { padding-top: 10px; padding-bottom: 10px; }
+
+.row-title {
+  display: block;
+  font-weight: bold;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.row-sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #93A0B0;                       /* secondary text: half a step down */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Domain ribbon (the app's single signature detail) ----
+ * A 4px color band on the left of each bookmark row; the color comes
+ * from a domain hash into a 5-color palette: the same site always gets
+ * the same color, which helps users spot frequently used sites by
+ * color. All five sit in the same lightness band (distinguishable
+ * grays on monochrome/low-color screens), and amber is deliberately
+ * NOT among them - amber is reserved for the "focus/actionable"
+ * meaning, to avoid confusion */
+.row.bm.rb-0 { border-left-color: #4FB3E8; }  /* sky */
+.row.bm.rb-1 { border-left-color: #3EBD8C; }  /* mint */
+.row.bm.rb-2 { border-left-color: #9C7BE0; }  /* violet */
+.row.bm.rb-3 { border-left-color: #E8638C; }  /* rose */
+.row.bm.rb-4 { border-left-color: #8A97AB; }  /* steel */
+
+/* ---- Focus state: the functional core ----
+ * Amber background + ink text = inversion of both hue and lightness;
+ * layered with the left amber bar and the "»" prefix, it stays the most
+ * striking block even on a monochrome screen. D-pad users locate
+ * themselves entirely by it. */
+.row.focused {
+  background: #FFC24B;
+  color: #10151D;
+  border-left-color: #FFC24B;
+}
+.row.focused .row-sub { color: #3D4657; }
+.row.focused .row-title::before { content: "\00BB "; }  /* » */
+
+/* Full-row buttons (form/menu/confirm/language views) */
+.row.btn {
+  margin-top: 8px;
+  text-align: center;
+  font-weight: bold;
+  background: #1A222E;
+  border: 2px solid #2A3542;
+  border-radius: 4px;
+}
+.row.btn.focused {
+  background: #FFC24B;
+  color: #10151D;
+  border-color: #FFC24B;
+}
+/* Marker for the active option in the language view ("*" is reliable
+   even on monochrome screens) */
+.row.btn.current::after { content: " *"; }
+
+/* ---------- Empty-list state (the ribbon metaphor) ---------- */
+
+#empty-tip { padding: 26px 16px 18px; text-align: center; }
+/* Three small ribbons: pure CSS bars (no images/emoji - reliable on old
+   devices) using the same palette as bookmark rows, hinting "your
+   ribbons will appear here" */
+.ribbon-mark {
+  display: block;
+  width: 66px;
+  margin: 0 auto 14px;
+}
+.ribbon-mark .rm {
+  display: inline-block;
+  width: 14px;
+  height: 30px;
+  margin: 0 4px;
+  border-radius: 0 0 7px 7px;           /* rounded bottom = ribbon tail */
+}
+.rm.rm-0 { background: #4FB3E8; }
+.rm.rm-1 { background: #3EBD8C; }
+.rm.rm-2 { background: #9C7BE0; }
+
+.empty-title { font-size: 15px; color: #93A0B0; }
+.empty-sub { margin-top: 6px; font-size: 13px; color: #5C6878; }
+
+#no-match-tip { padding: 22px 12px; font-size: 14px; color: #93A0B0; text-align: center; }
+
+/* ---------- Form / menu / confirm views ---------- */
+
+#view-form, #view-menu, #view-confirm, #view-lang {
+  padding: 10px;
+  overflow-y: auto;
+}
+h2 { font-size: 17px; margin-bottom: 8px; }
+
+.field-label {
+  display: block;
+  margin: 10px 0 4px;
+  font-size: 14px;
+  color: #93A0B0;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 9px 8px;
+  font-size: 16px;                /* same size as body text: no zooming */
+  background: #0C1117;            /* one step deeper than the page: the
+                                     input visually "recesses" */
+  color: #F0F3F7;
+  border: 2px solid #2A3542;
+  border-radius: 4px;
+  outline: none;
+}
+/* Inputs use an amber border (not a full inversion) when focused - the
+   dark field keeps text readable, and it reads as a distinct "focus
+   material" from the full-row inversion in lists */
+input[type="text"].focused { border-color: #FFC24B; }
+input[type="text"]::placeholder { color: #5C6878; }
+
+#cmd-search { padding: 4px 10px; }
+#search-input { margin-top: 2px; }
+
+.target-line {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #93A0B0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- KaiAds banner slot (functional constraints kept) ---------- */
+
+#ad-banner {
+  flex: none;
+  height: 34px;
+  background: #0C1117;
+  overflow: hidden;
+}
+
+/* ---------- Soft key bar: three segments (left nav / middle Enter
+ * action / right backspace) ----------
+ * Maps to physical keys: middle = the D-pad center key (Enter),
+ * right = the backspace area. Known KaiAds pitfall: full-screen
+ * interstitials break bottom-positioned elements, so the bar is fixed
+ * with top: calc(100vh - 34px) computed from the top; the 34px also
+ * appears in #app's padding-bottom - change both together. */
+#statusbar {
+  position: fixed;
+  top: calc(100vh - 34px);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  max-width: 240px;
+  height: 34px;
+  padding: 0 10px;
+  background: #0C1117;                  /* deeper than the page: anchors
+                                           the bottom of the screen */
+  border-top: 2px solid #2A3542;
+  font-size: 13px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#sk-left { color: #93A0B0; }
+#sk-mid {
+  flex: 1 1 auto;
+  text-align: center;
+  font-weight: bold;
+  color: #FFC24B;                       /* middle action = amber, same
+                                           signal as focus */
+}
+#sk-right { color: #93A0B0; }
+/* Toast state: the transient message spans the bar; left/right keep
+   their space invisibly so nothing jumps */
+#statusbar.toast #sk-left,
+#statusbar.toast #sk-right { visibility: hidden; }
+#statusbar.toast #sk-mid { color: #F0F3F7; }
