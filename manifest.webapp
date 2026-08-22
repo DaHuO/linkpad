@@ -3,10 +3,10 @@
   "name": "LinkPad",
   "description": "Your phone's browser only lets you pin 6 sites to the home screen. LinkPad gives you room for all of them — save as many links as you want, search by name in seconds, and jump straight to your favorite sites.\n\n• Save any website with one key press\n• Search your saved sites by title or address\n• Sort by newest or most recently visited\n• Works in English, हिन्दी, Français, and Kiswahili",
   "type": "web",
-  "launch_path": "index.html",
+  "launch_path": "/linkpad/index.html",
   "icons": {
-    "56": "icons/icon-56.png",
-    "112": "icons/icon-112.png"
+    "56": "/linkpad/icons/icon-56.png",
+    "112": "/linkpad/icons/icon-112.png"
   },
   "developer": {
     "name": "Bookmark Dev",
