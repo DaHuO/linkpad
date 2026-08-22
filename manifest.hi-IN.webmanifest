@@ -1,13 +1,12 @@
 {
-  "//": "KaiStore store-listing variant for hi-IN. Same format as manifest.webapp; the store reads this file when the storefront language is hi-IN. name stays LinkPad (brand, not translated); the locales block is kept in sync with manifest.webapp",
   "default_locale": "hi-IN",
   "name": "LinkPad",
   "description": "आपके फ़ोन का ब्राउज़र होम स्क्रीन पर सिर्फ़ 6 साइटें पिन करने देता है। LinkPad में आप जितनी चाहें उतनी साइटें सेव कर सकते हैं — नाम से तुरंत खोजें और अपनी पसंदीदा साइट पर सीधे पहुँचें।\n\nएक बार दबाकर कोई भी वेबसाइट सेव करें\nनाम या पते से अपनी सेव की गई साइटें खोजें\nनई या हाल ही में देखी गई साइटों के हिसाब से क्रम लगाएं\nअंग्रेज़ी, हिन्दी, फ़्रेंच और स्वाहिली में उपलब्ध",
   "type": "web",
-  "launch_path": "/index.html",
+  "launch_path": "index.html",
   "icons": {
-    "56": "/icons/icon-56.png",
-    "112": "/icons/icon-112.png"
+    "56": "icons/icon-56.png",
+    "112": "icons/icon-112.png"
   },
   "developer": {
     "name": "Bookmark Dev",
