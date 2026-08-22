@@ -3,10 +3,10 @@
   "name": "LinkPad",
   "description": "Le navigateur de votre téléphone ne permet d'épingler que 6 sites sur l'écran d'accueil. LinkPad vous permet d'en enregistrer autant que vous voulez — recherchez-les par nom en quelques secondes et accédez directement à vos sites préférés.\n\nEnregistrez n'importe quel site d'une simple pression de touche\nRecherchez vos sites par titre ou adresse\nTriez par date d'ajout ou de dernière visite\nDisponible en anglais, hindi, français et swahili",
   "type": "web",
-  "launch_path": "index.html",
+  "launch_path": "/linkpad/index.html",
   "icons": {
-    "56": "icons/icon-56.png",
-    "112": "icons/icon-112.png"
+    "56": "/linkpad/icons/icon-56.png",
+    "112": "/linkpad/icons/icon-112.png"
   },
   "developer": {
     "name": "Bookmark Dev",
