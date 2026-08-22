@@ -1,13 +1,12 @@
 {
-  "//": "KaiStore store-listing variant for sw-KE. Same format as manifest.webapp; the store reads this file when the storefront language is sw-KE. name stays LinkPad (brand, not translated); the locales block is kept in sync with manifest.webapp",
   "default_locale": "sw-KE",
   "name": "LinkPad",
   "description": "Kivinjari cha simu yako kinaruhusu tu kubandika tovuti 6 kwenye skrini ya nyumbani. LinkPad inakupa nafasi ya kuhifadhi viungo vingi upendavyo — tafuta kwa jina kwa sekunde chache na ufikie tovuti unazozipenda moja kwa moja.\n\nHifadhi tovuti yoyote kwa mbofyo mmoja\nTafuta tovuti zako kwa jina au anwani\nPanga kwa mpya au kwa zilizotembelewa hivi karibuni\nInapatikana kwa Kiingereza, Kihindi, Kifaransa, na Kiswahili",
   "type": "web",
-  "launch_path": "/index.html",
+  "launch_path": "index.html",
   "icons": {
-    "56": "/icons/icon-56.png",
-    "112": "/icons/icon-112.png"
+    "56": "icons/icon-56.png",
+    "112": "icons/icon-112.png"
   },
   "developer": {
     "name": "Bookmark Dev",
