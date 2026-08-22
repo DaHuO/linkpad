@@ -3,10 +3,10 @@
   "name": "LinkPad",
   "description": "Kivinjari cha simu yako kinaruhusu tu kubandika tovuti 6 kwenye skrini ya nyumbani. LinkPad inakupa nafasi ya kuhifadhi viungo vingi upendavyo — tafuta kwa jina kwa sekunde chache na ufikie tovuti unazozipenda moja kwa moja.\n\nHifadhi tovuti yoyote kwa mbofyo mmoja\nTafuta tovuti zako kwa jina au anwani\nPanga kwa mpya au kwa zilizotembelewa hivi karibuni\nInapatikana kwa Kiingereza, Kihindi, Kifaransa, na Kiswahili",
   "type": "web",
-  "launch_path": "index.html",
+  "launch_path": "/linkpad/index.html",
   "icons": {
-    "56": "icons/icon-56.png",
-    "112": "icons/icon-112.png"
+    "56": "/linkpad/icons/icon-56.png",
+    "112": "/linkpad/icons/icon-112.png"
   },
   "developer": {
     "name": "Bookmark Dev",
