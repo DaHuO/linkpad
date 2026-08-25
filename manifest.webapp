@@ -1,6 +1,7 @@
 {
   "default_locale": "en-US",
   "name": "LinkPad",
+  "version": "1.0.0",
   "description": "Your phone's browser only lets you pin 6 sites to the home screen. LinkPad gives you room for all of them — save as many links as you want, search by name in seconds, and jump straight to your favorite sites.\n\n• Save any website with one key press\n• Search your saved sites by title or address\n• Sort by newest or most recently visited\n• Works in English, हिन्दी, Français, and Kiswahili",
   "type": "web",
   "launch_path": "/linkpad/index.html",
@@ -9,8 +10,8 @@
     "112": "/linkpad/icons/icon-112.png"
   },
   "developer": {
-    "name": "Bookmark Dev",
-    "url": "https://example.com/"
+    "name": "LinkPad Dev",
+    "url": "https://github.com/DaHuO"
   },
   "locales": {
     "en-US": {
@@ -20,22 +21,18 @@
     },
     "hi-IN": {
       "name": "LinkPad",
-      "subtitle": "6 से ज़्यादा साइटें सेव करें। तुरंत खोजें।",
+      "subtitle": "6 से अधिक साइटें सेव करें। तुरंत खोजें।",
       "description": "आपके फ़ोन का ब्राउज़र होम स्क्रीन पर सिर्फ़ 6 साइटें पिन करने देता है। LinkPad में आप जितनी चाहें उतनी साइटें सेव कर सकते हैं — नाम से तुरंत खोजें और अपनी पसंदीदा साइट पर सीधे पहुँचें।\n\nएक बार दबाकर कोई भी वेबसाइट सेव करें\nनाम या पते से अपनी सेव की गई साइटें खोजें\nनई या हाल ही में देखी गई साइटों के हिसाब से क्रम लगाएं\nअंग्रेज़ी, हिन्दी, फ़्रेंच और स्वाहिली में उपलब्ध"
     },
     "fr-FR": {
       "name": "LinkPad",
-      "subtitle": "Enregistrez plus de 6 sites. Retrouvez-les en un instant.",
+      "subtitle": "Plus de 6 sites. Retrouvez-les vite.",
       "description": "Le navigateur de votre téléphone ne permet d'épingler que 6 sites sur l'écran d'accueil. LinkPad vous permet d'en enregistrer autant que vous voulez — recherchez-les par nom en quelques secondes et accédez directement à vos sites préférés.\n\nEnregistrez n'importe quel site d'une simple pression de touche\nRecherchez vos sites par titre ou adresse\nTriez par date d'ajout ou de dernière visite\nDisponible en anglais, hindi, français et swahili"
     },
     "sw-KE": {
       "name": "LinkPad",
-      "subtitle": "Hifadhi tovuti zaidi ya 6. Zitafute haraka.",
+      "subtitle": "Hifadhi zaidi ya 6. Zitafute haraka.",
       "description": "Kivinjari cha simu yako kinaruhusu tu kubandika tovuti 6 kwenye skrini ya nyumbani. LinkPad inakupa nafasi ya kuhifadhi viungo vingi upendavyo — tafuta kwa jina kwa sekunde chache na ufikie tovuti unazozipenda moja kwa moja.\n\nHifadhi tovuti yoyote kwa mbofyo mmoja\nTafuta tovuti zako kwa jina au anwani\nPanga kwa mpya au kwa zilizotembelewa hivi karibuni\nInapatikana kwa Kiingereza, Kihindi, Kifaransa, na Kiswahili"
     }
-  },
-  "permissions": {},
-  "dependencies": {
-    "ads-sdk": ""
   }
 }
