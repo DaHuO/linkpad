@@ -1,6 +1,16 @@
 /*
  * KaiAds SDK integration layer (required for KaiStore submission)
  *
+ * API usage follows the official KaiAds SDK docs (kaiads.com/publishers/sdk.html):
+ *  - callbacks are `onerror` / `onready` (NO underscores - getting these
+ *    wrong makes the SDK fail with error code 2 into a callback it can
+ *    never reach, i.e. completely silent failure);
+ *  - responsive (banner) ads REQUIRE `container`, `w` and `h` in the
+ *    getKaiAd config - without a container the SDK requests a fullscreen
+ *    ad instead and no banner ever appears;
+ *  - ads are displayed with `ad.call('display', {...})`; events are
+ *    'display' / 'click' / 'close'.
+ *
  * Design principles (utility app - restrained ad placement):
  *  - Banner: permanently in the list view only (above the soft key bar),
  *    hidden together with the view on switches, so add/edit/delete and
@@ -10,10 +20,9 @@
  *      1) an in-memory flag: at most once per cold start (page
  *         lifecycle);
  *      2) a localStorage timestamp: skipped when the last successful
- *         show is less than MIN_INTERVAL ago, avoiding "an ad on every
- *         cold start";
+ *         show is less than MIN_INTERVAL ago;
  *  - Silent degradation: every failure path - remote script not loading,
- *    getKaiAd missing, on_error, SDK not ready within 8 seconds - just
+ *    getKaiAd missing, onerror, SDK not ready within 8 seconds - just
  *    gives up silently (console logs kept for debugging); bookmark
  *    functionality is never affected.
  *
@@ -27,30 +36,40 @@
    * Configuration (TODO: replace before submitting to the store)
    * ===================================================================== */
 
-  // TODO: replace with the real Publisher ID assigned by the KaiAds
-  // portal (publisher.kaiads.com)
+  // Publisher ID from the KaiAds portal (publisher.kaiads.com)
   var PUBLISHER_ID = '59c555c8-c385-480c-a86b-6f61fba7d5d4';
-  // TODO: replace with the app/slot names created for this app in the
-  // KaiAds portal
+  // Optional per the docs (used for reporting only)
   var APP_NAME = 'linkpad';
   var BANNER_SLOT = 'banner_list_bottom';
   var INTERSTITIAL_SLOT = 'interstitial_cold_start';
 
-  // Test mode: 1 = request test ads (useful during development, works
-  // partially even with the placeholder Publisher ID); set to 0 before
-  // store submission. TODO: confirm before review.
-  var TEST_MODE = 1;
+  // Test mode: 1 = request test ads. Keep at 1 while the store reviews
+  // the app (they will see test ads); set to 0 for commercial launch.
+  var TEST_MODE = 0;
 
-  // Interstitial master switch and minimum interval between shows (ms).
-  // 10 minutes = repeated cold starts within a short session will not
-  // each trigger an ad. Adjust to your ad strategy.
+  // Request timeout in ms (SDK-side). The docs' default is 60s; shorter
+  // so a dead network does not keep requests hanging.
+  var REQUEST_TIMEOUT = 10000;
+
+  // Banner size: the docs support up to 240x264 and reject too-small
+  // containers (error codes 3/6). 240x64 is the standard mobile banner
+  // size and keeps enough room for the bookmark list on a 320px screen.
+  // Keep in sync with the #ad-banner height in css/style.css.
+  var BANNER_W = 240;
+  var BANNER_H = 64;
+
+  // Interstitial master switch. Frequency follows the official best
+  // practice: after a fullscreen ad at launch, wait for at least five
+  // more completed sessions (cold starts) before showing it again.
   var INTERSTITIAL_ENABLED = true;
-  var INTERSTITIAL_MIN_INTERVAL = 10 * 60 * 1000;
+  var INTERSTITIAL_MIN_SESSIONS = 5;
 
-  // Persistence key for the last successful interstitial show
-  // (localStorage; both read and write are try/catch'd - in private mode
-  // it degrades to "once per session only")
-  var LS_LAST_INTERSTITIAL = 'bm-ad-last-interstitial';
+  // Session (cold start) counter and the launch number at which the
+  // last interstitial was actually shown (localStorage; try/catch'd -
+  // private mode degrades to "once per session only" via the in-memory
+  // flag)
+  var LS_LAUNCH_COUNT = 'bm-ad-launch-count';
+  var LS_LAST_SHOWN_LAUNCH = 'bm-ad-last-shown-launch';
 
   // SDK wait budget: the remote script loads with defer, so on a slow
   // network the app runs first and the SDK arrives later; after this
@@ -65,6 +84,27 @@
   var bannerRequested = false;              // guards against duplicate banner requests
   var interstitialTriedThisSession = false; // interstitial attempted this cold start
   var inited = false;
+  var currentLaunch = 0;                    // sequential cold-start number of this session
+
+  // KaiAds serves ads to KaiOS devices; the official website-integration
+  // sample guards every request with this UA check. On desktop browsers
+  // banner requests just time out (error 5) and test creatives get in
+  // the way of debugging, so ads are fully disabled off-device.
+  function isKaiOS() {
+    return /kaios/i.test(navigator.userAgent || '');
+  }
+
+  function readLaunchCount() {
+    try {
+      return parseInt(window.localStorage.getItem(LS_LAUNCH_COUNT) || '0', 10) || 0;
+    } catch (e) { return 0; }
+  }
+
+  function readLastShownLaunch() {
+    try {
+      return parseInt(window.localStorage.getItem(LS_LAST_SHOWN_LAUNCH) || '0', 10) || 0;
+    } catch (e) { return 0; }
+  }
 
   function sdkReady() {
     // The SDK exposes the global getKaiAd on window once loaded
@@ -94,23 +134,26 @@
   }
 
   /* =====================================================================
-   * Banner ad (permanent, bottom of the list view)
+   * Banner ad (responsive; permanent at the bottom of the list view)
    *
    * The #ad-banner container sits inside view-list, below the scroll
    * area:
-   *  - hidden is removed only when an ad is ready (no reserved space
-   *    while unfilled);
+   *  - the container element, width and height are passed in the
+   *    getKaiAd config as the docs require for responsive ads;
+   *  - hidden is removed only on the ad's 'display' event (no reserved
+   *    space while unfilled);
    *  - the container hides/shows together with view-list, so other
-   *    views have no ad slot.
-   *
-   * TODO (verify during device/integration QA): the ad.banner node and
-   * the ad.on('finish') event name below follow the best recollection of
-   * the KaiAds v4 docs - cross-check once against the integration docs
-   * at https://publisher.kaiads.com.
+   *    views have no ad slot;
+   *  - tabindex + navClass integrate the ad into this app's focus
+   *    chain (.focusable), so users can reach it with the D-pad and
+   *    press Enter to interact - key events inside the ad's iframe do
+   *    not bubble into our keydown handler.
    * ===================================================================== */
 
   function loadBanner() {
     if (bannerRequested) return;
+    var container = document.getElementById('ad-banner');
+    if (!container) return;
     bannerRequested = true;
     try {
       window.getKaiAd({
@@ -118,37 +161,42 @@
         app: APP_NAME,
         slot: BANNER_SLOT,
         test: TEST_MODE,
-        on_error: function (error) {
+        timeout: REQUEST_TIMEOUT,
+        container: container,       // required for responsive ads
+        w: BANNER_W,
+        h: BANNER_H,
+        onerror: function (error) {
+          // Lightweight DOM state marker for debugging (readable via
+          // devtools or remote inspect); no visual impact
+          container.setAttribute('data-ad-state', 'error ' + error);
           // No fill / network failure: stay silent, the UI keeps no ad
           // slot at all
           if (window.console && console.log) {
             console.log('[ads] banner error:', error);
           }
         },
-        on_ready: function (ad) {
+        onready: function (ad) {
+          container.setAttribute('data-ad-state', 'ready');
           try {
-            var container = document.getElementById('ad-banner');
-            if (!container) return;
-            container.innerHTML = '';
-            // TODO: verify against the v4 API - for banner ads,
-            // appending the SDK-generated ad.banner DOM node into the
-            // container completes the display
-            if (ad && ad.banner) {
-              container.appendChild(ad.banner);
+            ad.on('display', function () {
+              container.setAttribute('data-ad-state', 'displayed');
+              // The ad is actually on screen - only now reserve the space
               container.classList.remove('hidden');
-            }
-            if (ad && typeof ad.on === 'function') {
-              // Banner finished: the MVP does no auto-rotation; the
-              // container keeps whatever it has
-              ad.on('finish', function () {
-                if (window.console && console.log) {
-                  console.log('[ads] banner finished');
-                }
-              });
-            }
+            });
+            ad.on('error', function (e) {
+              if (window.console && console.log) console.log('[ads] banner display error:', e);
+            });
+            // Per the docs: display takes tabindex (focusable via D-pad),
+            // navClass (class name the SDK applies to the container, ours
+            // is .focusable) and the CSS display mode of the container.
+            ad.call('display', {
+              tabindex: 0,
+              navClass: 'focusable',
+              display: 'block'
+            });
           } catch (e) {
             // A rendering failure must never leak into the main flow
-            if (window.console && console.log) console.log('[ads] banner render fail:', e);
+            if (window.console && console.log) console.log('[ads] banner display fail:', e);
           }
         }
       });
@@ -158,17 +206,11 @@
   }
 
   /* =====================================================================
-   * Full-screen interstitial (cold start into the home screen only)
+   * Fullscreen interstitial (cold start into the home screen only)
    * ===================================================================== */
 
-  function readLastShown() {
-    try {
-      return parseInt(window.localStorage.getItem(LS_LAST_INTERSTITIAL) || '0', 10) || 0;
-    } catch (e) { return 0; }
-  }
-
-  function writeLastShown(ts) {
-    try { window.localStorage.setItem(LS_LAST_INTERSTITIAL, String(ts)); } catch (e) {}
+  function writeLastShown(launch) {
+    try { window.localStorage.setItem(LS_LAST_SHOWN_LAUNCH, String(launch)); } catch (e) {}
   }
 
   function maybeShowInterstitial() {
@@ -176,12 +218,14 @@
     // Frequency control 1: at most one attempt per cold start (page
     // lifecycle)
     if (interstitialTriedThisSession) return;
-    // Frequency control 2: skip when the last successful show is more
-    // recent than the interval (avoids an ad on every cold start)
-    if (Date.now() - readLastShown() < INTERSTITIAL_MIN_INTERVAL) return;
+    // Frequency control 2 (official best practice): after a launch
+    // fullscreen ad, wait for at least five more completed sessions
+    // before showing it again
+    var lastShown = readLastShownLaunch();
+    if (lastShown && currentLaunch - lastShown < INTERSTITIAL_MIN_SESSIONS) return;
 
     interstitialTriedThisSession = true; // mark on request, preventing a
-                                         // re-trigger before on_ready
+                                         // re-trigger before onready
 
     try {
       window.getKaiAd({
@@ -189,7 +233,9 @@
         app: APP_NAME,
         slot: INTERSTITIAL_SLOT,
         test: TEST_MODE,
-        on_error: function (error) {
+        timeout: REQUEST_TIMEOUT,
+        onerror: function (error) {
+          document.body.setAttribute('data-ad-inter', 'error ' + error);
           // Silent degradation; since nothing was shown, no timestamp is
           // written and the next cold start may retry once the interval
           // allows
@@ -197,24 +243,23 @@
             console.log('[ads] interstitial error:', error);
           }
         },
-        on_ready: function (ad) {
+        onready: function (ad) {
+          document.body.setAttribute('data-ad-inter', 'ready');
           try {
-            // TODO (verify against the v4 API): interstitials display
-            // via ad.call('display'); some doc revisions require extra
-            // arguments - check the signature against the official docs
-            if (ad && typeof ad.call === 'function') {
-              ad.call('display');
-              // Record the timestamp only after actually showing, so
+            ad.on('display', function () {
+              document.body.setAttribute('data-ad-inter', 'displayed');
+              // Record the launch number only after actually showing, so
               // frequency control counts real impressions
-              writeLastShown(Date.now());
-            }
-            if (ad && typeof ad.on === 'function') {
-              ad.on('finish', function () {
-                if (window.console && console.log) {
-                  console.log('[ads] interstitial finished');
-                }
-              });
-            }
+              writeLastShown(currentLaunch);
+            });
+            ad.on('close', function () {
+              if (window.console && console.log) {
+                console.log('[ads] interstitial closed');
+              }
+            });
+
+            // Fullscreen ads display with a bare ad.call('display')
+            ad.call('display');
           } catch (e) {
             if (window.console && console.log) console.log('[ads] interstitial display fail:', e);
           }
@@ -234,7 +279,21 @@
     init: function () {
       if (inited) return;
       inited = true;
+      // Official guidance: only request ads on KaiOS devices. Desktop
+      // browsers time out (error 5) and test creatives disturb debugging
+      if (!isKaiOS()) {
+        if (window.console && console.log) {
+          console.log('[ads] non-KaiOS environment, ads disabled');
+        }
+        return;
+      }
       whenSdkReady(function () {
+        // Count this cold start first; the interstitial's 5-session rule
+        // reads it below
+        currentLaunch = readLaunchCount() + 1;
+        try {
+          window.localStorage.setItem(LS_LAUNCH_COUNT, String(currentLaunch));
+        } catch (e) { /* private mode: session flag still applies */ }
         loadBanner();
         maybeShowInterstitial();
       });
