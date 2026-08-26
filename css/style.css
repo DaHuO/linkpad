@@ -252,9 +252,12 @@ input[type="text"]::placeholder { color: #5C6878; }
 
 #ad-banner {
   flex: none;
-  height: 34px;
+  height: 64px;
   background: #0C1117;
   overflow: hidden;
+}
+#ad-banner.focused {
+  outline: 2px solid #FFC24B;
 }
 
 /* ---------- Soft key bar: three segments (left nav / middle Enter
